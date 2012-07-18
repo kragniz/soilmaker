@@ -29,8 +29,13 @@ class Svg(object):
   <defs>
     <style type="text/css"><![CDATA[
       text {
-        font-family: Sans;
-        text-anchor: end;
+        font-family: "Sans";
+      }
+      path {
+        stroke: #000000;
+        stroke-width:8;
+        stroke-linecap:round;
+        fill:none;
       }
     ]]></style>
   </defs>
@@ -39,7 +44,6 @@ class Svg(object):
      transform="translate(500,200)">'''
 
     __footer = '''    <path
-       style="fill:none;stroke:#000000;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        d="M 500,0 500, 2000 250, 2200 0, 2000 0, 0 z"
        id="outline"/>
   </g>
@@ -59,34 +63,50 @@ class Svg(object):
          height="{hight}"
          x="0"
          y="{start}" />
-      <g
-         transform="translate(0,{depth})">
+      <g transform="translate(525, {midpoint})">
+           {textblock}
+      </g>
+      <g transform="translate(0,{depth})">
         <path
-           id="bar"
-           d="M -50, 0 500, 0"
-           style="fill:none;stroke:#000000;stroke-width:8;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
-
-        <text font-size="70" transform="translate(-60,25)">
-          {text}
+           d="M -50, 0 500, 0"/>
+        <text font-size="{fontsize}" transform="translate(-60,25)" text-anchor="end">
+          {measurement}
         </text>
       </g>
     </g>'''
 
-    def horizon(self, depth, start=0):
-    	return self.__horizon.format(start=start,
-    		                         depth=depth,
-    		                         hight=depth-start,
-    		                         text=depth/10,
-    		                         colour=''.join([hex(random.randint(50, 255))[2:] for i in range(3)]))
+    def textblock(self, text, fontsize=50, linemax=20):
+        line = ''
+        lines = []
+        for w in text.split():
+            if len(line + ' ' + w) < linemax:
+                line = line + ' ' + w
+            else:
+                lines += ['<tspan x="0" dy="{fontsize}">%s</tspan>' % line]
+                line = w
+        if line: lines += ['<tspan x="0" dy="{fontsize}">%s</tspan>' % line]
+        return ('<text font-size="{fontsize}">' +
+               '\n'.join(lines) + '</text>').format(fontsize=fontsize)
+
+    def horizon(self, depth, start=0, text=''):
+        return self.__horizon.format(start=start,
+                                     depth=depth,
+                                     hight=depth-start,
+                                     measurement=depth/10,
+                                     midpoint=(depth+start)/2,
+                                     fontsize=50,
+                                     textblock=self.textblock(text),
+                                     colour=''.join([hex(random.randint(50, 255))[2:] for i in range(3)]))
 
     def make(self, *args):
-    	lastHorizon = 0
-    	horizons = ''
-    	for h in args:
-    		horizons = self.horizon(h, lastHorizon) + horizons
-    		lastHorizon = h
-    	return self.__header + horizons + self.__footer
+        lastHorizon = 0
+        horizons = ''
+        for h in args:
+            horizons = self.horizon(h[0], lastHorizon, h[1]) + horizons
+            lastHorizon = h[0]
+        return self.__header + horizons + self.__footer
 
 if __name__ == '__main__':
-	s = Svg()
-	print s.make(300, 865, 1700)
+    s = Svg()
+    print s.make((200, 'Some soil'), (865, 'Some more soil'), (1500, 'A very nice patch of soil going a rather large way into the ground'))
+    #print s.textblock('hello there this is a long bit of text thank you very much')
