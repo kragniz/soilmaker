@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import random
+from rpy2.robjects.packages import importr
 
 class Svg(object):
     __header = '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -58,7 +58,7 @@ class Svg(object):
     <g
        id="horizon">
       <rect
-         style="fill:#{colour};fill-opacity:0.75;stroke:none"
+         style="fill:{colour};fill-opacity:0.75;stroke:none"
          width="500"
          height="{hight}"
          x="0"
@@ -75,6 +75,9 @@ class Svg(object):
       </g>
     </g>'''
 
+    def __init__(self):
+      self.munsell = importr('munsell')
+
     def textblock(self, text, fontsize=50, linemax=50):
         line = ''
         lines = []
@@ -88,7 +91,7 @@ class Svg(object):
         return ('<text font-size="{fontsize}" transform="translate(25,-30)">' +
                '\n'.join(lines) + '</text>').format(fontsize=fontsize)
 
-    def horizon(self, depth, start=0, text=''):
+    def horizon(self, depth, colour, start=0, text=''):
         return self.__horizon.format(start=start,
                                      depth=depth,
                                      hight=depth-start,
@@ -96,17 +99,21 @@ class Svg(object):
                                      midpoint=(depth+start)/2,
                                      fontsize=50,
                                      textblock=self.textblock(text),
-                                     colour=''.join([hex(random.randint(50, 255))[2:] for i in range(3)]))
+                                     colour=self.colour(colour))
+    def colour(self, mnsl):
+      '''Return the hex value of a munsell colour'''
+      return self.munsell.mnsl(mnsl)[0]
 
     def make(self, *args):
         lastHorizon = 0
         horizons = ''
         for h in args:
-            horizons = self.horizon(h[0], lastHorizon, h[1]) + horizons
+            horizons = self.horizon(h[0], h[1], lastHorizon, h[2]) + horizons
             lastHorizon = h[0]
         return self.__header + horizons + self.__footer
 
 if __name__ == '__main__':
     s = Svg()
-    print s.make((200, 'Some soil'), (865, 'Some more soil'), (1500, 'A very nice patch of soil going a rather large way into the ground'))
+    print s.make((250, '7.5YR 4/4', 'Some soil'),
+                 (500, '7.5YR 4/6', 'Some more fnbgf dsfjh fh djfh djsff hdsjfhsdjfhdsjhsf d soil'))
     #print s.textblock('hello there this is a long bit of text thank you very much')
