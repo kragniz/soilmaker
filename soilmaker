@@ -30,20 +30,24 @@ class Svg(object):
 
   <defs>
     <style type="text/css"><![CDATA[
-      text {
+      text {{
         font-family: Sans;
-      }
-      path {
+      }}
+      path {{
         stroke: #000000;
         stroke-width:8;
         stroke-linecap:round;
         fill:none;
-      }
+      }}
     ]]></style>
   </defs>
    <g
      id="profile"
-     transform="translate(500,200)">'''
+     transform="translate(500,200)">
+        <path d="M -50, 0 500, 0"/>
+        <text font-size="{fontsize}" transform="translate(-60,25)" text-anchor="end">
+          0
+        </text>'''
 
     __footer = '''    <path
        d="M 500, 0 500, 2000 250, 2200 0, 2000 0, 0 z"
@@ -151,7 +155,7 @@ class Svg(object):
                 out += [w]
         return ' '.join(out)
 
-    def generate(self, inputFile, outputFile=None):
+    def generate(self, inputFile, outputFile=None, fontsize=50):
         '''Generate and write a complete svg file'''
         lastHorizon = 0
         horizons = ''
@@ -175,7 +179,7 @@ class Svg(object):
         if not outputFile:
             outputFile = os.path.split(inputFile)[1]+'.svg'
         with open(outputFile, 'w') as f:
-            f.write(self.__header + horizons + self.__footer)
+            f.write(self.__header.format(fontsize=fontsize) + horizons + self.__footer)
 
     def match(self, pattern, text):
         '''Return an iterator which can be used to check if a regex has a match in a string.
@@ -215,4 +219,4 @@ class Svg(object):
 
 if __name__ == '__main__':
     s = Svg()
-    print s.generate('/home/louis/git/soilmaker/examples/profile3/profile3')
+    print s.generate('/home/louis/git/soilmaker/examples/profile1/profile1')
