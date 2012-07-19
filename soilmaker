@@ -49,16 +49,19 @@ class Svg(object):
   </g>
 </svg>'''
 
-    __bottom = '''    <path
-       style="fill:#ff00ff;fill-opacity:0.5;stroke:none"
-       d="M 500,700 500, 2000 250, 2200 0, 2000 0, 700 z"
-       id="bottom"/>'''
+    __bottom = '''    <g>
+      <path style="fill:{colour};stroke:none"
+         d="M 500,{start} 500, 2000 250, 2200 0, 2000 0, {start} z"/>
+      <g transform="translate(500, {midpoint})">
+           <path d="M 0, 0 75, 0"/>
+           {textblock}
+      </g>
+    </g>'''
 
     __horizon = '''
-    <g
-       id="horizon">
+    <g>
       <rect
-         style="fill:{colour};fill-opacity:0.75;stroke:none"
+         style="fill:{colour};stroke:none"
          width="500"
          height="{hight}"
          x="0"
@@ -100,6 +103,13 @@ class Svg(object):
                                      fontsize=50,
                                      textblock=self.textblock(text),
                                      colour=self.colour(colour))
+
+    def bottom(self, start, colour, text=''):
+        return self.__bottom.format(start=start,
+                                    midpoint=(start+2000)/2,
+                                    textblock=self.textblock(text),
+                                    colour=self.colour(colour),
+                                    )
     def colour(self, mnsl):
       '''Return the hex value of a munsell colour'''
       return self.munsell.mnsl(mnsl)[0]
@@ -108,12 +118,35 @@ class Svg(object):
         lastHorizon = 0
         horizons = ''
         for h in args:
-            horizons = self.horizon(h[0], h[1], lastHorizon, h[2]) + horizons
+            if h[0] == '-':
+                horizons = self.bottom(int(lastHorizon), h[1], h[2]) + horizons
+            else:
+                horizons = self.horizon(int(h[0]), h[1], int(lastHorizon), h[2]) + horizons
             lastHorizon = h[0]
         return self.__header + horizons + self.__footer
 
+    def parse(self, text):
+        lines = text.split('\n')
+        horizons = []
+        for l in lines[1:]:
+            w = l.split()
+            horizons += [(w[0], w[1]+' '+w[2], ' '.join(w[3:]))]
+        return horizons
+
+    def formatText(self, texture, horizonDesignation, musell, colour):
+        '''"-"" "10YR 3/2" "horizonDesignation" "texture"'''
+        return '({horizonDesignation}) {colour} ({munsell}), {texture}.'.formaat(
+            horizonDesignation=horizonDesignation,
+            colour=colour,
+            munsell=munsell,
+            texture=texture)
+
+
 if __name__ == '__main__':
     s = Svg()
-    print s.make((250, '7.5YR 4/4', 'Some soil'),
-                 (500, '7.5YR 4/6', 'Some more fnbgf dsfjh fh djfh djsff hdsjfhsdjfhdsjhsf d soil'))
-    #print s.textblock('hello there this is a long bit of text thank you very much')
+    # print s.make(('820', '10YR 7/2', 'Some soil'),
+    #              ('1050', '10YR 5/2', 'Some more fnbgf dsf d soil'),
+    #              ('-', '10YR 3/2', 'hello this looks nice'))
+    print s.parse('''820 10YR 7/2 Some soil
+1050 10YR 5/2 Some more fnbgf dsf d soil
+- 10YR 3/2 hello this looks nice''')
