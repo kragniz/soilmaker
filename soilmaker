@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from rpy2.robjects.packages import importr
+import re
+import os
 
 class Svg(object):
     __header = '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -44,14 +46,14 @@ class Svg(object):
      transform="translate(500,200)">'''
 
     __footer = '''    <path
-       d="M 500,0 500, 2000 250, 2200 0, 2000 0, 0 z"
+       d="M 500, 0 500, 2000 250, 2200 0, 2000 0, 0 z"
        id="outline"/>
   </g>
 </svg>'''
 
     __bottom = '''    <g>
       <path style="fill:{colour};stroke:none"
-         d="M 500,{start} 500, 2000 250, 2200 0, 2000 0, {start} z"/>
+         d="M 500, {start} 500, 2000 250, 2200 0, 2000 0, {start} z"/>
       <g transform="translate(500, {midpoint})">
            <path d="M 0, 0 75, 0"/>
            {textblock}
@@ -111,31 +113,70 @@ class Svg(object):
                                     colour=self.colour(colour),
                                     )
     def colour(self, mnsl):
-      '''Return the hex value of a munsell colour'''
-      return self.munsell.mnsl(mnsl)[0]
+        '''Return the hex value of a munsell colour'''
+        try:
+            return self.munsell.mnsl(mnsl)[0]
+        except:
+            return '#BBBBBB'
 
-    def make(self, *args):
+    def generate(self, inputFile, outputFile=None):
         lastHorizon = 0
         horizons = ''
-        for h in args:
-            if h[0] == '-':
-                horizons = self.bottom(int(lastHorizon), h[1], h[2]) + horizons
+        for n in self.parse(open(inputFile).read()):
+            text = '({horizonDesignation}){colour}{munsell}; {texture}.'.format(
+                    horizonDesignation=n['designation'],
+                    colour=' %s' % n['description'] if n['description'] else '',
+                    munsell=' (%s)' % n['munsell'] if n['munsell'] else '',
+                    texture=n['texture'])
+
+            if n['depth'] == '-':
+                horizons = self.bottom(int(lastHorizon)*10,
+                                       n['munsell'],
+                                       text=text) + horizons
             else:
-                horizons = self.horizon(int(h[0]), h[1], int(lastHorizon), h[2]) + horizons
-            lastHorizon = h[0]
-        return self.__header + horizons + self.__footer
+                horizons = self.horizon(int(n['depth'])*10,
+                                        n['munsell'],
+                                        int(lastHorizon)*10,
+                                        text=text) + horizons
+            lastHorizon = n['depth']
+        if not outputFile:
+            outputFile = os.path.split(inputFile)[1]+'.svg'
+        with open(outputFile, 'w') as f:
+            f.write(self.__header + horizons + self.__footer)
+
+    def match(self, pattern, text):
+        m = re.compile(pattern)
+        matches = m.match(text)
+        if matches:
+            yield matches.group()
 
     def parse(self, text):
-        lines = text.split('\n')
-        horizons = []
-        for l in lines[1:]:
-            w = l.split()
-            horizons += [(w[0], w[1]+' '+w[2], ' '.join(w[3:]))]
-        return horizons
+        blocks = re.findall('Horizon number:.+?Fe/Mn:', text, flags=re.S)
+        blockdata = []
+        for b in blocks:
+            print b, '-----------'
+            n = int(re.search('(?<=Horizon number: ).+', b).group())
+            depth = re.search('(?<=Depth:).+', b).group().strip()
+            for m in self.match('\d+\+', depth):
+                depth = '-'
+            if depth != '-':
+                depth = int(re.search('(?<=\d-)\d+(?=\s*?cm)', depth.strip()+'cm').group())
+            des = re.search('(?<=Horizon designation:).+', b).group().strip()
+            texture = re.search('(?<=Texture:).*', b).group().strip()
+            matrix = re.search('(?<=Matrix:).*', b).group().strip()
+            munsell, colourDesc = '', ''
+            if matrix:
+                munsell = ' '.join(matrix.split()[:2])
+                colourDesc = ' '.join(matrix.split()[2:])
+            blockdata += [{'depth': depth,
+                           'designation': des,
+                           'munsell': munsell,
+                           'description': colourDesc,
+                           'texture': texture}]
+        return blockdata
 
     def formatText(self, texture, horizonDesignation, musell, colour):
-        '''"-"" "10YR 3/2" "horizonDesignation" "texture"'''
-        return '({horizonDesignation}) {colour} ({munsell}), {texture}.'.formaat(
+        return '({horizonDesignation}) {colour} ({munsell}), {texture}.'.format(
             horizonDesignation=horizonDesignation,
             colour=colour,
             munsell=munsell,
@@ -144,9 +185,4 @@ class Svg(object):
 
 if __name__ == '__main__':
     s = Svg()
-    # print s.make(('820', '10YR 7/2', 'Some soil'),
-    #              ('1050', '10YR 5/2', 'Some more fnbgf dsf d soil'),
-    #              ('-', '10YR 3/2', 'hello this looks nice'))
-    print s.parse('''820 10YR 7/2 Some soil
-1050 10YR 5/2 Some more fnbgf dsf d soil
-- 10YR 3/2 hello this looks nice''')
+    print s.generate('/home/louis/git/soilmaker/examples/profile2/profile2')

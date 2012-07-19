@@ -35,7 +35,7 @@ PS Mod: CLY
 Texture: L
 Clay%: 15
 Field pH:
-Matrix: 10YR5/4 Yellowish brown
+Matrix: 10YR  5/4 Yellowish brown
 Stone abundance: Few
 Size: <2cm
 Shape: SR
@@ -54,7 +54,7 @@ PS Mod: FLY
 Texture: L
 Clay%: 25
 Field pH:
-Matrix: 7.5YR Reddish yellow
+Matrix: 7.5YR 4/4 Reddish yellowdfdsd
 Stone abundance: Few
 Size: M
 Shape: SR
@@ -73,11 +73,27 @@ PS Mod: CLY
 Texture: L
 Clay%: 12
 Field pH:
-Matrix: 10YR8/2 Very pale brown
+Matrix: 10YR 8/2 Very pale brown
 Stone abundance: M
 Size: <1cm
 Shape: SR
 Type: LIM
+Roots:
+CaCO3:
+Fe/Mn:
+
+Horizon number: 4
+Depth: 10+
+Horizon designation: C
+PS Mod:
+Texture: Bedrock (Limestone)
+Clay%:
+Field pH:
+Matrix: 7.5YR 8/6
+Stone abundance:
+Size:
+Shape:
+Type:
 Roots:
 CaCO3:
 Fe/Mn:
