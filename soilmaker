@@ -84,6 +84,7 @@ class Svg(object):
       self.munsell = importr('munsell')
 
     def textblock(self, text, fontsize=50, linemax=50):
+        '''Return a string containing a word wrapped svg text object'''
         line = ''
         lines = []
         for w in text.split():
@@ -97,6 +98,7 @@ class Svg(object):
                '\n'.join(lines) + '</text>').format(fontsize=fontsize)
 
     def horizon(self, depth, colour, start=0, text=''):
+        '''Return a string containing a complete horizon as svg'''
         return self.__horizon.format(start=start,
                                      depth=depth,
                                      hight=depth-start,
@@ -107,6 +109,7 @@ class Svg(object):
                                      colour=self.colour(colour))
 
     def bottom(self, start, colour, text=''):
+        '''Return a string containing the bottom horizon as svg'''
         return self.__bottom.format(start=start,
                                     midpoint=(start+2000)/2,
                                     textblock=self.textblock(text),
@@ -119,7 +122,37 @@ class Svg(object):
         except:
             return '#BBBBBB'
 
+    def deabbreviate(self, s):
+        '''Replace some common abbreviations with longer words'''
+        abbreviations = {
+            'S': 'sand',
+            'LS': 'loamy sand',
+            'SL': 'sandy loam',
+            'Z': 'silt',
+            'ZL': 'silt loam',
+            'L': 'loam',
+            'SCL': 'sandy clay loam',
+            'ZCL': 'silty clay loam',
+            'CL': 'clay loam',
+            'SC': 'sandy clay',
+            'ZC': 'silty clay',
+            'C': 'clay',
+            'P': 'peat',
+            'SP': 'silty peat',
+            'LP': 'loamy peat',
+            'PS': 'peaty sand',
+            'PL': 'peaty loam'
+        }
+        out = []
+        for w in s.split():
+            if w in abbreviations:
+                out += [abbreviations[w]]
+            else:
+                out += [w]
+        return ' '.join(out)
+
     def generate(self, inputFile, outputFile=None):
+        '''Generate and write a complete svg file'''
         lastHorizon = 0
         horizons = ''
         for n in self.parse(open(inputFile).read()):
@@ -127,7 +160,7 @@ class Svg(object):
                     horizonDesignation=n['designation'],
                     colour=' %s' % n['description'] if n['description'] else '',
                     munsell=' (%s)' % n['munsell'] if n['munsell'] else '',
-                    texture=n['texture'])
+                    texture=self.deabbreviate(n['texture']))
 
             if n['depth'] == '-':
                 horizons = self.bottom(int(lastHorizon)*10,
@@ -145,19 +178,24 @@ class Svg(object):
             f.write(self.__header + horizons + self.__footer)
 
     def match(self, pattern, text):
+        '''Return an iterator which can be used to check if a regex has a match in a string.
+        Use like this:
+            for m in match(pattern, text):
+                #only gets excecuted if a match is present'''
         m = re.compile(pattern)
         matches = m.match(text)
         if matches:
             yield matches.group()
 
     def parse(self, text):
+        '''Parse a block of text and return the bits of data we need'''
         blocks = re.findall('Horizon number:.+?Fe/Mn:', text, flags=re.S)
         blockdata = []
         for b in blocks:
             print b, '-----------'
             n = int(re.search('(?<=Horizon number: ).+', b).group())
             depth = re.search('(?<=Depth:).+', b).group().strip()
-            for m in self.match('\d+\+', depth):
+            for m in self.match('\d+(cm)?\+', depth):
                 depth = '-'
             if depth != '-':
                 depth = int(re.search('(?<=\d-)\d+(?=\s*?cm)', depth.strip()+'cm').group())
@@ -175,14 +213,6 @@ class Svg(object):
                            'texture': texture}]
         return blockdata
 
-    def formatText(self, texture, horizonDesignation, musell, colour):
-        return '({horizonDesignation}) {colour} ({munsell}), {texture}.'.format(
-            horizonDesignation=horizonDesignation,
-            colour=colour,
-            munsell=munsell,
-            texture=texture)
-
-
 if __name__ == '__main__':
     s = Svg()
-    print s.generate('/home/louis/git/soilmaker/examples/profile2/profile2')
+    print s.generate('/home/louis/git/soilmaker/examples/profile3/profile3')
