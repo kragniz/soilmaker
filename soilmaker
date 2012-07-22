@@ -124,6 +124,7 @@ class Svg(object):
         try:
             return self.munsell.mnsl(mnsl)[0]
         except:
+            print 'error with colour "%s"' % mnsl
             return '#BBBBBB'
 
     def deabbreviate(self, s):
@@ -155,7 +156,7 @@ class Svg(object):
                 out += [w]
         return ' '.join(out)
 
-    def generate(self, inputFile, outputFile=None, fontsize=50):
+    def generate(self, inputFile, outputDir=None, fontsize=50):
         '''Generate and write a complete svg file'''
         lastHorizon = 0
         horizons = ''
@@ -176,8 +177,10 @@ class Svg(object):
                                         int(lastHorizon)*10,
                                         text=text) + horizons
             lastHorizon = n['depth']
-        if not outputFile:
+        if not outputDir:
             outputFile = os.path.split(inputFile)[1]+'.svg'
+        else:
+            outputFile = os.path.join(outputDir, os.path.split(inputFile)[1]) + '.svg'
         with open(outputFile, 'w') as f:
             f.write(self.__header.format(fontsize=fontsize) + horizons + self.__footer)
 
@@ -196,7 +199,7 @@ class Svg(object):
         blocks = re.findall('Horizon number:.+?Fe/Mn:', text, flags=re.S)
         blockdata = []
         for b in blocks:
-            print b, '-----------'
+            #print b, '-----------'
             n = int(re.search('(?<=Horizon number: ).+', b).group())
             depth = re.search('(?<=Depth:).+', b).group().strip()
             for m in self.match('\d+(cm)?\+', depth):
@@ -218,5 +221,22 @@ class Svg(object):
         return blockdata
 
 if __name__ == '__main__':
+    import glob
     s = Svg()
-    print s.generate('/home/louis/git/soilmaker/examples/profile1/profile1')
+    for f in glob.glob('data/profile*/profile*'):
+        print f
+        try:
+            print s.generate(f, 'out')
+        except Exception, e:
+            print '''
+            $
+            $
+            $
+            $
+            $
+            $
+            $
+            $
+            $
+            $'''
+            print e
