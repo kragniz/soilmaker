@@ -2,6 +2,9 @@
 from rpy2.robjects.packages import importr
 import re
 import os
+from svglib.svglib import svg2rlg
+import cairo
+import rsvg
 
 class Svg(object):
     __header = '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -12,8 +15,8 @@ class Svg(object):
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   width="2600"
-   height="2500">
+   width="{width}"
+   height="{hight}">
 
   <metadata
      id="metadata">
@@ -39,15 +42,28 @@ class Svg(object):
         stroke-linecap:round;
         fill:none;
       }}
+
+      body {{
+        background: red;
+      }}
     ]]></style>
   </defs>
-   <g
-     id="profile"
-     transform="translate(500,200)">
-        <path d="M -50, 0 500, 0"/>
-        <text font-size="{fontsize}" transform="translate(-60,25)" text-anchor="end">
-          0
-        </text>'''
+  <rect
+         style="fill:#FFFFFF;stroke:none"
+         width="{width}"
+         height="{hight}"
+         x="0"
+         y="0"/>
+  <text font-size="75" transform="translate(75,100)">
+  #{number}
+  </text>
+  <g
+    id="profile"
+    transform="translate(500,200)">
+       <path d="M -50, 0 500, 0"/>
+       <text font-size="{fontsize}" transform="translate(-60,25)" text-anchor="end">
+         0
+       </text>'''
 
     __footer = '''    <path
        d="M 500, 0 500, 2000 250, 2200 0, 2000 0, 0 z"
@@ -122,7 +138,9 @@ class Svg(object):
     def colour(self, mnsl):
         '''Return the hex value of a munsell colour'''
         try:
-            return self.munsell.mnsl(mnsl)[0]
+            if mnsl == '':
+                return '#BBBBBB'
+            return self.munsell.mnsl(re.sub('\/[1,3]', '/2', mnsl))[0]
         except:
             print 'error with colour "%s"' % mnsl
             return '#BBBBBB'
@@ -156,16 +174,19 @@ class Svg(object):
                 out += [w]
         return ' '.join(out)
 
-    def generate(self, inputFile, outputDir=None, fontsize=50):
-        '''Generate and write a complete svg file'''
+    def generateSvg(self, inputData, fontsize=50):
+        '''Generate and return a complete svg file'''
         lastHorizon = 0
         horizons = ''
-        for n in self.parse(open(inputFile).read()):
-            text = '({horizonDesignation}){colour}{munsell}; {texture}.'.format(
-                    horizonDesignation=n['designation'],
-                    colour=' %s' % n['description'] if n['description'] else '',
-                    munsell=' (%s)' % n['munsell'] if n['munsell'] else '',
-                    texture=self.deabbreviate(n['texture']))
+        parsed = self.parse(inputData)
+
+        for i in range(len(parsed)-1):
+            n = parsed[i+1]
+            text = '{horizonDesignation}{colour}{munsell}{texture}'.format(
+                    horizonDesignation='(%s) ' % n['designation'] if n['designation'] else '',
+                    colour='%s ' % n['description'].capitalize() if n['description'] else '',
+                    munsell='(%s)' % n['munsell'] if n['munsell'] else '',
+                    texture='; %s.' % self.deabbreviate(n['texture']).capitalize() if n['texture'] else '.')
 
             if n['depth'] == '-':
                 horizons = self.bottom(int(lastHorizon)*10,
@@ -177,12 +198,41 @@ class Svg(object):
                                         int(lastHorizon)*10,
                                         text=text) + horizons
             lastHorizon = n['depth']
-        if not outputDir:
-            outputFile = os.path.split(inputFile)[1]+'.svg'
+        return (self.__header.format(fontsize=fontsize,
+                                         width=2600,
+                                         hight=2500,
+                                         number=parsed['headers']['number']
+                                         ) + horizons + self.__footer).replace('&', '&amp;')
+
+
+    def generate(self, inputFile, outputDir=None, fontsize=50):
+        data = open(inputFile).read()
+        if data:
+            svgData = self.generateSvg(data)
         else:
-            outputFile = os.path.join(outputDir, os.path.split(inputFile)[1]) + '.svg'
-        with open(outputFile, 'w') as f:
-            f.write(self.__header.format(fontsize=fontsize) + horizons + self.__footer)
+            print inputFile, 'had no data, can\'t make image'
+            return False
+
+        if not outputDir:
+            svgOutputFile = os.path.split(inputFile)[1] + '.svg'
+            pngOutputFile = os.path.join('png', os.path.split(inputFile)[1]) + '.png'
+        else:
+            svgOutputFile = os.path.join(outputDir, os.path.split(inputFile)[1]) + '.svg'
+            pngOutputFile = os.path.join(outputDir, 'png', os.path.split(inputFile)[1]) + '.png'
+        with open(svgOutputFile, 'w') as f:
+            f.write(svgData)
+
+
+        img =  cairo.ImageSurface(cairo.FORMAT_ARGB32, 2600, 2500)
+        ctx = cairo.Context(img)
+
+        ## handler= rsvg.Handle(<svg filename>)
+        # or, for in memory SVG data:
+        handler= rsvg.Handle(None, svgData)
+        handler.render_cairo(ctx)
+        img.write_to_png(pngOutputFile)
+
+        return True
 
     def match(self, pattern, text):
         '''Return an iterator which can be used to check if a regex has a match in a string.
@@ -197,12 +247,17 @@ class Svg(object):
     def parse(self, text):
         '''Parse a block of text and return the bits of data we need'''
         blocks = re.findall('Horizon number:.+?Fe/Mn:', text, flags=re.S)
-        blockdata = []
+        blockdata = {}
+        profile = re.search('(?<=Profile number:).+', text).group().strip()
+
+        blockdata['headers'] = {'number': profile}
+
+        i = 1
         for b in blocks:
             #print b, '-----------'
-            n = int(re.search('(?<=Horizon number: ).+', b).group())
+            n = int(re.search('(?<=Horizon number: ).+', b).group().split()[0])
             depth = re.search('(?<=Depth:).+', b).group().strip()
-            for m in self.match('\d+(cm)?\+', depth):
+            for m in self.match('.+\+', depth):
                 depth = '-'
             if depth != '-':
                 depth = int(re.search('(?<=\d-)\d+(?=\s*?cm)', depth.strip()+'cm').group())
@@ -213,11 +268,12 @@ class Svg(object):
             if matrix:
                 munsell = ' '.join(matrix.split()[:2])
                 colourDesc = ' '.join(matrix.split()[2:])
-            blockdata += [{'depth': depth,
+            blockdata[i] = {'depth': depth,
                            'designation': des,
                            'munsell': munsell,
                            'description': colourDesc,
-                           'texture': texture}]
+                           'texture': texture}
+            i += 1
         return blockdata
 
 if __name__ == '__main__':
@@ -225,18 +281,7 @@ if __name__ == '__main__':
     s = Svg()
     for f in glob.glob('data/profile*/profile*'):
         print f
-        try:
-            print s.generate(f, 'out')
-        except Exception, e:
-            print '''
-            $
-            $
-            $
-            $
-            $
-            $
-            $
-            $
-            $
-            $'''
-            print e
+        if f[-1] == '~':
+            pass
+        else:
+            s.generate(f, 'out')
