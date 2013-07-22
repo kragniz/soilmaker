@@ -206,6 +206,7 @@ class Svg(object):
 
 
     def generate(self, inputFile, outputDir=None, fontsize=50):
+        '''Save a png and svg image to disk'''
         data = open(inputFile).read()
         if data:
             svgData = self.generateSvg(data)
