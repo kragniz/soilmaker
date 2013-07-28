@@ -213,10 +213,12 @@ class Svg(object):
             print inputFile, 'had no data, can\'t make image'
             return False
 
-        if not outputDir:
+        if outputDir is None:
             svgOutputFile = os.path.split(inputFile)[1] + '.svg'
             pngOutputFile = os.path.join('png', os.path.split(inputFile)[1]) + '.png'
         else:
+            if not os.path.exists(outputDir):
+                os.makedirs(os.path.join(outputDir, 'png'))
             svgOutputFile = os.path.join(outputDir, os.path.split(inputFile)[1]) + '.svg'
             pngOutputFile = os.path.join(outputDir, 'png', os.path.split(inputFile)[1]) + '.png'
         with open(svgOutputFile, 'w') as f:
