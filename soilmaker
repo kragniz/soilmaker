@@ -2,7 +2,6 @@
 from rpy2.robjects.packages import importr
 import re
 import os
-from svglib.svglib import svg2rlg
 import cairo
 import rsvg
 
