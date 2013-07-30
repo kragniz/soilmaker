@@ -281,7 +281,7 @@ class Svg(object):
 if __name__ == '__main__':
     import glob
     s = Svg()
-    for f in glob.glob('data/profile*/profile*'):
+    for f in glob.glob('data/profile*'):
         print f
         if f[-1] == '~':
             pass
