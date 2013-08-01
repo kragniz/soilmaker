@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from rpy2.robjects.packages import importr
 import re
 import os
 import cairo
@@ -99,9 +98,6 @@ class Svg(object):
       </g>
     </g>'''
 
-    def __init__(self):
-      self.munsell = importr('munsell')
-
     def textblock(self, text, fontsize=50, linemax=50):
         '''Return a string containing a word wrapped svg text object'''
         line = ''
@@ -135,14 +131,8 @@ class Svg(object):
                                     colour=self.colour(colour),
                                     )
     def colour(self, mnsl):
-        '''Return the hex value of a munsell colour'''
-        try:
-            if mnsl == '':
-                return '#BBBBBB'
-            return self.munsell.mnsl(re.sub('\/[1,3]', '/2', mnsl))[0]
-        except:
-            print 'error with colour "%s"' % mnsl
-            return '#BBBBBB'
+        '''Return the hex value of the default background colour'''
+        return '#BBBBBB'
 
     def deabbreviate(self, s):
         '''Replace some common abbreviations with longer words'''
