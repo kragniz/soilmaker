@@ -45,6 +45,10 @@ class Svg(object):
         background: red;
       }}
     ]]></style>
+    <pattern id="tile" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M 0 0 Q 5 20 10 10 T 20 20" style="stroke: black;
+        stroke-width: 2; fill: none;"/>
+    </pattern>
   </defs>
   <rect
          style="fill:#FFFFFF;stroke:none"
@@ -81,7 +85,7 @@ class Svg(object):
     __horizon = '''
     <g>
       <rect
-         style="fill:{colour};stroke:none"
+         style="fill: url(#tile);stroke:none"
          width="500"
          height="{hight}"
          x="0"
