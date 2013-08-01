@@ -1,5 +1,3 @@
 depends on:
     python-rpy2
     python-rsvg
-    R
-    munsell (install using install.packages("munsell") in R as root)
