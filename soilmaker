@@ -4,103 +4,21 @@ import os
 import cairo
 import rsvg
 
+def get_svgs(directory):
+    svgs = {}
+    for filename in os.listdir(directory):
+        fullname = os.path.join(directory, filename)
+        if os.path.isfile(fullname) and filename.endswith('.svg'):
+            with open(fullname) as f:
+                svgs[filename[:-4]] = f.read()
+    return svgs
+
 class Svg(object):
-    __header = '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   width="{width}"
-   height="{hight}">
-
-  <metadata
-     id="metadata">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-
-  <defs>
-    <style type="text/css"><![CDATA[
-      text {{
-        font-family: Sans;
-      }}
-      path {{
-        stroke: #000000;
-        stroke-width:8;
-        stroke-linecap:round;
-        fill:none;
-      }}
-
-      body {{
-        background: red;
-      }}
-    ]]></style>
-    <pattern id="tile" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-        <path d="M 0 0 Q 5 20 10 10 T 20 20" style="stroke: black;
-        stroke-width: 2; fill: none;"/>
-    </pattern>
-  </defs>
-  <rect
-         style="fill:#FFFFFF;stroke:none"
-         width="{width}"
-         height="{hight}"
-         x="0"
-         y="0"/>
-  <text font-size="75" transform="translate(75,100)">
-  #{number}
-  </text>
-  <g
-    id="profile"
-    transform="translate(500,200)">
-       <path d="M -50, 0 500, 0"/>
-       <text font-size="{fontsize}" transform="translate(-60,25)" text-anchor="end">
-         0
-       </text>'''
-
-    __footer = '''    <path
-       d="M 500, 0 500, 2000 250, 2200 0, 2000 0, 0 z"
-       id="outline"/>
-  </g>
-</svg>'''
-
-    __bottom = '''    <g>
-      <path style="fill:{colour};stroke:none"
-         d="M 500, {start} 500, 2000 250, 2200 0, 2000 0, {start} z"/>
-      <g transform="translate(500, {midpoint})">
-           <path d="M 0, 0 75, 0"/>
-           {textblock}
-      </g>
-    </g>'''
-
-    __horizon = '''
-    <g>
-      <rect
-         style="fill: url(#tile);stroke:none"
-         width="500"
-         height="{hight}"
-         x="0"
-         y="{start}" />
-      <g transform="translate(500, {midpoint})">
-           <path d="M 0, 0 75, 0"/>
-           {textblock}
-      </g>
-      <g transform="translate(0,{depth})">
-        <path d="M -50, 0 500, 0"/>
-        <text font-size="{fontsize}" transform="translate(-60,25)" text-anchor="end">
-          {measurement}
-        </text>
-      </g>
-    </g>'''
+    svgs = get_svgs('svg')
+    __header = svgs['header']
+    __footer = svgs['footer']
+    __bottom = svgs['bottom']
+    __horizon = svgs['horizon']
 
     def textblock(self, text, fontsize=50, linemax=50):
         '''Return a string containing a word wrapped svg text object'''
