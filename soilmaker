@@ -109,11 +109,12 @@ class Svg(object):
                                         int(lastHorizon)*10,
                                         text=text) + horizons
             lastHorizon = n['depth']
+
         return (self.__header.format(fontsize=fontsize,
-                                         width=2600,
-                                         hight=2500,
-                                         number=parsed['headers']['number']
-                                         ) + horizons + self.__footer).replace('&', '&amp;')
+                                     width=2600,
+                                     hight=2500,
+                                     number=parsed['headers']['umber']
+                                    ) + horizons + self.__footer).replace('&', '&amp;')
 
 
     def generate(self, inputFile, outputDir=None, fontsize=50):
