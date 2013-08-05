@@ -1,0 +1,8 @@
+    <g>
+      <path style="fill:{colour};stroke:none"
+         d="M 500, {start} 500, 2000 250, 2200 0, 2000 0, {start} z"/>
+      <g transform="translate(500, {midpoint})">
+           <path d="M 0, 0 75, 0"/>
+           {textblock}
+      </g>
+    </g>
